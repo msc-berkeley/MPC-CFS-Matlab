@@ -1,0 +1,31 @@
+\begin{thebibliography}{4}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\urlprefix}{URL }
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi:\discretionary{}{}{}#1}\else
+  \providecommand{\doi}{doi:\discretionary{}{}{}\begingroup
+  \urlstyle{rm}\Url}\fi
+
+\bibitem[{Able(1956)}]{Abl:56}
+Able, B. (1956).
+\newblock Nucleic acid content of microscope.
+\newblock \emph{Nature}, 135, 7--9.
+
+\bibitem[{Able et~al.(1954)Able, Tagg, and Rush}]{AbTaRu:54}
+Able, B., Tagg, R., and Rush, M. (1954).
+\newblock Enzyme-catalyzed cellular transanimations.
+\newblock In A.~Round (ed.), \emph{Advances in Enzymology}, volume~2, 125--247.
+  Academic Press, New York, 3rd edition.
+
+\bibitem[{Keohane(1958)}]{Keo:58}
+Keohane, R. (1958).
+\newblock \emph{Power and Interdependence: World Politics in Transitions}.
+\newblock Little, Brown \& Co., Boston.
+
+\bibitem[{Powers(1985)}]{Pow:85}
+Powers, T. (1985).
+\newblock Is there a way out?
+\newblock \emph{Harpers}, 35--47.
+
+\end{thebibliography}

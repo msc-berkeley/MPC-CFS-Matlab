@@ -1,0 +1,135 @@
+% SAVE(4/7/2018)
+%===============================================================================
+% $Id: ifacconf.tex 19 2011-10-27 09:32:13Z jpuente $  
+% Template for IFAC meeting papers
+% Copyright (c) 2007-2008 International Federation of Automatic Control
+%===============================================================================
+\documentclass{ifacconf}
+
+\usepackage{graphicx}      % include this line if your document contains figures
+\usepackage{natbib}        % required for bibliography
+%===============================================================================
+\begin{document}
+\begin{frontmatter}
+
+\title{Stable Non-Convex MPC via Convex Feasibility Set Algorithm\thanksref{footnoteinfo}} 
+% Title, preferably not more than 10 words.
+
+\thanks[footnoteinfo]{Sponsor and financial support acknowledgment
+goes here. Paper titles should be written in uppercase and lowercase
+letters, not all uppercase.}
+
+\author[First]{First A. Author} 
+\author[First]{Second B. Author, Jr.} 
+\author[First]{Third C. Author}
+
+\address[First]{National Institute of Standards and Technology, 
+   Boulder, CO 80305 USA (e-mail: author@ boulder.nist.gov).}
+
+
+\begin{abstract}                % Abstract of not more than 250 words.
+(I'm just typing whatever I have in mind right now) Motion planning problem has continuously been a vigorous field in the control community over the years. Among all the method for implementation, Model Predictive Control (MPC) is commonly used in motion planning problems for autonomous vehicles and mobile robots. Intuitively, in the scenario of mobile robots, we are considering an MPC framework that is solving an optimization problem subject to non-convex state constraints. To solve this kind of problem, these paper presents an MPC framework using Convex Feasible Set (CFS) solver. The theoretical stability is discussed and simulation for the implementation is included in the paper. 
+
+\end{abstract}
+
+\begin{keyword}
+Non-convex MPC, Convex Feasible Set, Motion planning, Optimization, Stability.
+\end{keyword}
+
+\end{frontmatter}
+%===============================================================================
+
+\section{Introduction}
+Examining the vibrant development in motion planning for autonomous driving and robotics, it is no doubt that this is the core of improving mobility in the future. One of the important and impactful application using these techniques is automated guided vehicles (AGVs) serving in factories. In this paper, assuming that a low levle controller is in hand, we focus on optimization-based AGV-trajectory planning method. Although the environment in a factory is not as dynamic as driving scenarios, safety and efficiency still need to be guaranteed throughout the planning and executing process.
+
+With the above performance requirement, Model predictive control (MPC) is a framework that fits the need. MPC has been wildly used both in academia research and in industry applications. Its ability to handle input and state constraints makes it popular method to deal with motion planning problem. The fact that MPC has a framework structure also gives us more flexibility to change and improve the algorithms that solves the optimization problem. The motion planning environment (the state space) this work is focusing on is a 2-dimensional plan. The existence of obstacles makes it non-convex. Therefore, the problem is an MPC problem with non-convex state constraints. 
+
+MPC implementation in industries has been around for more then 2 decades. Though being aware of its importance, industrial proponents of MPC don't usually address stability theoretically. On the other hand, research in academia has put more effort on stability[]. Stability can be guaranteed by modifying prediction horizon, adding terminal cost, adding terminal equality constraint, or using terminal constraint set instead[,]. These methods have been found useful in developing stabilizing model predictive controllers. However, the literature that utilized these techniques often considered MPC tracking problem as regulating problem, which is regulating about a steady-state point. Imagine a car driving on a road, the terminal goal might be too far away that we instaed make the car to reach to a series of interim goals until reaching the terminal goal. In this sence, the problem is a full tracking problem[] or non-terminated problem which is the type of problem in this work.
+
+Several literature had focused on MPC that will need to handle target changes, one way of analyzing stability in these cases is to ensure feasibility, which is often sufficient to enable a simple guarantee closed loop stability for the controller[-]. One commonly seen application for MPC that is not a regulation problem is among autonomous driving car[]. In the literature, stability is guaranteed by setting stability boundary of the control system, i.e., stability is quantified by at several vehicle speed. Generally, most of the stability analysis is still done by considering a regulation problem. Asymptotic stability can be guaranteed when feasibility is held and the cost to go is decreasing step by step.
+
+One major problem of applying these stability analysis to the problem in this work is that the problem is non-convex. The fact that the MPC problem is non-convex make the close loop stability hard to be analyzed. Some work had focused on MPC problem with non-convex costfunction using sequential convex optimization method[]. Although the control result is promising, the difficulty of ensuring stability for non-convex MPC is also mentioned in the literature. It is clear that there is still a lot of effort that could be made in analysis stability for non-convex MPC problem. 
+
+In this work, we propose a new way of looking at the stability of non-convex MPC motion planing problem. Since the conventional technique cannot be apply, we will focus on the relationship between the optimal trajectory  
+
+
+
+
+
+
+\section{Problem Formulation}
+
+\begin{figure}[htbp]
+\begin{center}
+\includegraphics[width=8cm]{src/fig1}
+\caption{The execution and execution of MPC}
+\label{fig: mpc}
+\end{center}
+\end{figure}
+
+\subsection{Problem and Notations}
+Denote time step the planned trajectory at time step $k$ as $\mathbf{x}_k:= [x_k, x_{k+1},x_{k+2},\cdots,x_{k+H}]$ where $x_k$ is the current position. Then the trajectory will be executed and the robot will goes to $x_{k+1}$. The current time step is also marked at superscript in some cases to avoid confusion, e.g., $x_{k+1}^k$ means the planned $x_{k+1}$ at time step $k$.
+
+At time step $k$, given the current state $x_k$, the following optimization needs to be solved to obtain $\mathbf{x}_k$,
+\begin{eqnarray}
+&\min_{\mathbf{x}_{k}} & J(\mathbf{x}_k)\\
+&s.t.& x_{k+i}\in\Gamma,\forall i=1,\ldots,H
+\end{eqnarray}
+
+\begin{assum}[Cost]
+The cost function is convex and regular, and has the following form
+\begin{eqnarray}
+J(\mathbf{x}_k) = \sum_{i=1}^{H} \|x_{k+i}\|_{Q}^2 + \sum_{i=1}^{H-1} \|x_{k+i}-x_{k+i+1}\|_R^2
+\end{eqnarray}
+\end{assum}
+
+\begin{assum}[Constraint]
+The complement of $\Gamma$ is a collection of disjoint convex sets.
+\end{assum}
+
+Note that the problem is time-invariant. The final trajectory is $[x_k^k,x_{k+1}^{k+1},\ldots]$, which is equivalent to $[x_{k}^{k-1},x_{k+1}^{k},\ldots]$. As the problem is non-convex, it is possible that the trajectories enter into different local optima at different steps, hence hard to characterize stability. 
+
+\subsection{Notion of Stability}
+We say that the non-convex MPC is $M$-stable if $\|x_{k}^i-x_k^{i-1}\|\leq \|x_k^{i-1}-x_k^{i-2}\|$ for all $k$ and $k-M< i\leq k$. Note that the problem is always $1$-stable, since $\|x_{k}^k-x_k^{k-1}\|=0$. The notation implies that the planned state $x_k$ would have smaller and smaller change after iteration $k-M$.
+
+Such property is good since the system will not experience sudden change. Moreover, as the planned trajectory is usually tracked by a low level preview controller, the larger the $M$ is, the smooth the control commend would be.
+
+
+\subsection{The Convex Feasible Set Algorithm}
+Here we solve the optimization problem at each MPC step using the convex feasible set algorithm (CFS), which uses the previous solution as a reference. The convex feasible set for a reference point $x_r$ is computed as $\mathcal{F}(x_r) = \{x:A(x_r)x\leq b(x_r)\}$ where $A(x_r)$ is a matrix and $b(x_r)$ is a column vector. 
+At time step $k+1$, the reference is set as $\mathbf{x}_{k+1}^{r}=[x_{k+1}^{k},x_{k+2}^{k},\ldots,x_{k+H}^k, x_{k+H+1}^*]$ where
+\begin{eqnarray}
+x_{k+H+1}^* = \arg\min_{x_{k+H+1}} \|x_{k+H+1}\|_Q^2\\+\|x_{k+H}^k-x_{k+H+1}\|_R^2
+\end{eqnarray}
+If $x_{k+H+1}^*\in\Gamma$, then the optimal solution $\mathbf{x}_{k+1}^o = \mathbf{x}_{k+1}^r$.  If $x_{k+H+1}^*\notin\Gamma$, denote the feasible solution as 
+\begin{eqnarray}
+\bar{x}_{k+H+1} = \arg\min_{x_{k+H+1}\in\Gamma} \|x_{k+H+1}\|_Q^2\\+\|x_{k+H}^k-x_{k+H+1}\|_R^2
+\end{eqnarray}
+Moreover, denote $\mathbf{x}_{k+1}^{u}:=[x_{k+1}^{k},x_{k+2}^{k},\ldots,x_{k+H}^k, \bar x_{k+H+1}]$. 
+
+Then the optimal solution $\mathbf{x}_k^{o}$ at step $k$ satisfies that
+\begin{eqnarray}
+\mathbf{x}_k^{o} = \arg\min_{x_{k+i}\in \mathcal{F}(x_{k+i}^o)}J(\mathbf{x}_k)
+\end{eqnarray}
+Note that $J(\mathbf{x}_k^{r})\leq J(\mathbf{x}_k^{o})\leq J(\mathbf{x}_k^{u})$. 
+The executed trajectory is from those $\mathbf{x}_k^{o}$ for different $k$.
+
+
+\subsection{Stability with CFS}
+In this paper, we will show that the system is stable through simulation. We will leave the theoretical proof as a future work. But here we sketch the procedures. First, we can show that at two consecutive plans, the difference between the early state should be strictly smaller than the difference between any future state, i.e., $\|x_{k+i}^{k+1}-x_{k+i}^k\|<\lambda\|x_{k+i+1}^{k+1}-x_{k+i+1}^k\|$ for some $\lambda<1$. Then we can show that the state is bounded and the difference between the same state at different steps keeps decreasing.
+%the KKT condition is satisfied, i.e.,
+%\begin{eqnarray}
+%2Qx_{k+i}^k +2R(2x_{k+i}^k-x_{k+i-1}^k-x_{k+i+1}^k) + \eta_{k+i}^k A(x_{k+i}^k) \nonumber\\
+%= 0,\forall i=1,\ldots,H
+%\end{eqnarray}
+%where $\eta_{k+i}^k$ is the Lagrangian multiplier such that $\eta_{k+i}^k\geq 0$ and $\eta_{k+i}^k= 0$ if and only if $A(x_{k+i}^k)x_{k+i}^k= b(x_{k+i}^k)$.
+%
+%Hence
+%\begin{eqnarray}
+%(Q+2R)(x_{k+i}^{k+1}-x_{k+i}^k)=R(x_{k+i-1}^{k+1}-x_{k+i-1}^k)\\+R(x_{k+i+1}^{k+1}-x_{k+i+1}^k)-(\eta_{k+i}^{k+1} A(x_{k+i}^{k+1})-\eta_{k+i}^k A(x_{k+i}^k))
+%\end{eqnarray}
+%
+%Claim that $\|x_{k+i}^{k+1}-x_{k+i}^k\|<\lambda\|x_{k+i+1}^{k+1}-x_{k+i+1}^k\|$ for some $\lambda<1$.
+\bibliography{ifacconf}             
+                                                                         % in the appendices.
+\end{document}
