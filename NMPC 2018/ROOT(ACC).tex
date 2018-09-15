@@ -1,0 +1,457 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%2345678901234567890123456789012345678901234567890123456789012345678901234567890
+%        1         2         3         4         5         6         7         8
+
+\documentclass[letterpaper, 10 pt, conference]{ieeeconf}  % Comment this line out if you need a4paper
+
+%\documentclass[a4paper, 10pt, conference]{ieeeconf}      % Use this line for a4 paper
+
+\usepackage{graphicx}      % include this line if your document contains figures
+\usepackage{siunitx}
+\sisetup{per=slash, load=abbr}
+
+    % GRAPHICS
+\usepackage{tikz}
+
+
+
+\usepackage{epstopdf}
+\usepackage{comment}
+\usepackage{subfig}
+\usepackage{pgfplots}
+%\pgfplotsset{width=7cm,compat=1.3}
+%\usepackage{subcaption}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{amsmath}               
+  {
+    \newtheorem{assumption}{Assumption}
+  }
+
+\IEEEoverridecommandlockouts                              % This command is only needed if 
+                                                          % you want to use the \thanks command
+
+\overrideIEEEmargins                                      % Needed to meet printer requirements.
+
+%In case you encounter the following error:
+%Error 1010 The PDF file may be corrupt (unable to open PDF file) OR
+%Error 1000 An error occurred while parsing a contents stream. Unable to analyze the PDF file.
+%This is a known problem with pdfLaTeX conversion filter. The file cannot be opened with acrobat reader
+%Please use one of the alternatives below to circumvent this error by uncommenting one or the other
+%\pdfobjcompresslevel=0
+%\pdfminorversion=4
+
+% See the \addtolength command later in the file to balance the column lengths
+% on the last page of the document
+
+% The following packages can be found on http:\\www.ctan.org
+%\usepackage{graphics} % for pdf, bitmapped graphics files
+%\usepackage{epsfig} % for postscript graphics files
+%\usepackage{mathptmx} % assumes new font selection scheme installed
+%\usepackage{times} % assumes new font selection scheme installed
+%\usepackage{amsmath} % assumes amsmath package installed
+%\usepackage{amssymb}  % assumes amsmath package installed
+
+\title{\LARGE \bf
+Stable Non-Convex MPC for Motion Planning*
+}
+
+
+\author{ Jessica Leu$^{1}$, Changliu Liu$^{2}$,  and Masayoshi Tomizuka$^{1}$% <-this % stops a space
+\thanks{*This work was supported by National Science Foundation (Award \#1734109)}% <-this % stops a space
+\thanks{$^{1}$Jessica Leu and Masayoshi Tomizuka are with the Department of Electrical Engineering, University of California,
+Berkeley, CA 94720 USA{\tt\small jess.leu24, tomizuka@berkeley.edu}}%
+\thanks{$^{2}$Changliu Liu is with the Department of Aeronautics \& Astronautics, Sanford University, CA 94305 USA
+        {\tt\small changliuliu@stanford.edu}}%
+}
+
+
+\begin{document}
+
+
+
+\maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+
+Real-time, safe, and stable motion planning in cluttered environments remains challenging due to the non-convexity of the problem. This paper investigates MPC-based motion planning. As there are many local optima due to non-convexity, it is important to guarantee stability of the non-convex MPC such that the trajectories will not jump around multiple local optima. In order to analyze stability properties, a notion of $M$-analysis is introduced in this paper, which guarantees finite convergence (at least $M$ steps ahead) of the planned trajectories. With such notion, we verify the stability properties of a non-convex MPC which implements the convex feasible set algorithm (CFS) at every MPC step through extensive simulations and experiments. The $M$-analysis for stability properties provides a tractable tool to understand dynamics of non-convex MPC.
+
+\end{abstract}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{INTRODUCTION}
+
+The development of intelligent robots and autonomous vehicles is craving for real-time, safe, and stable motion planning in cluttered dynamic environments. For example, an automated guided vehicle (AGV) on factory floors \cite{wu2004modeling} needs to decide in real time how to bypass multiple human workers and a set of obstacles in the environment in order to approach its target efficiently \cite{wang2009autonomous}\cite{oleari2014industrial}. 
+
+In literature, motion planning algorithms usually fall into three categories: graph-search based algorithm, sampling-based algorithm, and optimization-based algorithm. Among these algorithms, this paper focus on model predictive control (MPC) \cite{rawlings1999tutorial}, an optimization-based algorithm. MPC has been widely adopted both in academia research and in industrial applications. Its ability to handle input and state constraints makes it popular in addressing motion planning problems. However, the existence of obstacles in the environment introduces non-convex state constraints, which results in non-convex MPC problems. It remains challenging to obtain real-time, safe and stable solutions for non-convex MPCs. An efficient optimization algorithm, i.e., the convex feasible set (CFS) algorithm \cite{liu2018convex}, has been proposed to obtain a safe open-loop trajectory in real time. However, it is unclear whether the method assures stability in the closed-loop.
+
+Many efforts have been made in academia regarding stability analysis. Usually, stability can be guaranteed by modifying prediction horizon, adding terminal cost, adding terminal equality constraint, or using terminal set constraint instead \cite{mayne2000constrained}. These methods are demonstrated to be useful to stabilize a MPC controller and can guarantee that the calculated commands and the resulting states are bounded. However, the biggest limitation is that these traditional techniques can only be applied to regulation problems. MPC motion planning problems are more complex than regulation problems \cite{limon2006stability}, which involves generating and changing of the targets. On top of that,
+even the results are bounded, this does not guarantee that the results will be dynamically acceptable for the robot. Dynamically unacceptable trajectory will cause the robot to execute violent movement that is harmful to the robot and also threatens human in the environment.  
+
+MPC with target changes has also been addressed in literature. One way to analyze stability in such cases is to ensure feasibility, which is often sufficient to enable a simple guarantee of closed-loop stability for the controller \cite{boccia2014stability}\cite{dughman2015survey}\cite{zhang2016switched}. One common application of non-regulating MPC problem is autonomous vehicles \cite{mejari2014stabilization}. In literature, stability is guaranteed by setting stability boundary for the control system, i.e., stability is quantified at several vehicle speeds. Generally, most of the stability analysis is still done by considering a regulation problem. Asymptotic stability can be guaranteed when feasibility is held and the cost-to-go is decreasing step by step.
+
+However, as those methods only address convex MPC problems, it is difficult to apply them in the stability analysis of the non-convex MPC problem considered in this paper. Some work focused on MPC problems with non-convex cost function using the sequential convex optimization method \cite{hovgaard2013nonconvex}. Although the result is promising, the difficulty of ensuring closed-loop stability for non-convex MPC is also mentioned in the literature. 
+Analyzing closed-loop stability of non-convex MPC problem remains challenging. A standard analytical approach to verify properties of non-convex MPC is still missing.
+
+
+The contribution of this paper is to provide a new method to analyze the stability property of a non-convex MPC problem. In this paper, we first introduce a new notion of stability property called $M$-analysis and then analyze the properties of the proposed algorithm,  non-convex MPC that implements CFS (MPC-CFS). The relationships among the optimal trajectories generated at different steps will be examined, so as to guarantee that the robot trajectory will not experience sudden jumps during trajectory execution. This addresses the limitation of traditional stability analysis, and can more assure that the planning result is executable for the robot. Simulation studies are performed to test the performance of the implemented CFS  algorithm in the MPC framework. The stability features are analyzed using the proposed method. Finally, experiment is carried to verified the algorithm.
+
+The remainder of the paper is organized as follows. Section 2 provides the problem formulation. Section 3 shows simulation results. Section 4 shows the experiment result. Section 5 concludes the paper.
+
+\section{PROBLEM FORMULATION}
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=8cm]{src/MPCstruc.png}
+\caption{The execution structure of MPC}
+\label{fig: mpc}
+\end{center}
+\end{figure}
+
+\begin{figure}[t]
+      \centering
+      \includegraphics[width=6cm]{plot/MPCsystem.pdf}
+      \caption{Overall system control design. }
+      \label{fig:MPCsystem}
+\end{figure}
+
+\begin{figure}[t]
+      \centering
+      \includegraphics[width=5cm]{plot/slack.pdf}
+      \caption{Illustration of the slack variable. }
+      \label{fig:slack}
+\end{figure}
+
+\subsection{Problem and Notations}
+In MPC, at each time step $t$, a future trajectory will be planned by solving the optimization problem. This trajectory is denoted as $\mathbf{x}_{t=k}=\mathbf{x}_{k} := [x_k, x_{k+1},x_{k+2},\cdots,x_{k+H}]$ where the state, $x_k$, is called the $k^{th}$ action location. $H$ is the prediction horizon. In this paper, $x_k= [x(k)\quad y(k)]^{\intercal}$ that contains the $x$ and $y$ coordinate of the robot's location in 2-dimensional Cartesian space at time step $t=k$. Note that $x_k$ correspond to the current position at time step $t=k$. The trajectory will then be executed and the robot will go to $x_{k+1}$, the $k+1^{th}$ action location, which is the planned action location for the robot at time step $t=k+1$. The sampling time between two time steps is a constant, denoted as $\Delta t$. After reaching the next action location, the robot will again solve the optimization problem and plan a new trajectory and repeat the process. To avoid confusion, the current time step can also be marked as superscript in some cases , e.g., $x_{k+1}^k$ means the planned action location $x_{k+1}$ at time step $t=k$.
+
+At time step $k=t$, given the current state, denoted as $x_0(t=k)$, the following optimization needs to be solved to obtain $\mathbf{x}_k$,
+
+
+\begin{eqnarray}
+&\min_{\mathbf{x}_{k}} & J(\mathbf{x}_k),\\
+&s.t.& x_{k+i}\in\Gamma,\forall i=1,\ldots,H,\\
+&&         x_{k}=x_0(k).
+\end{eqnarray}
+
+The current state is measured and assigned to the first entry of $\mathbf{x}_{k}$. Note that the optimization problem for each time step is time-invariant. There are two assumptions in this formulation: 
+
+\begin{assumption}[Cost]
+The cost function is convex and regular, and has the following form
+\begin{equation}
+J(\mathbf{x}_k) = C_1\|\mathbf{D}\mathbf{x}_k-\mathbf{d}\|_{2}^2 + C_2 \|\mathbf{V}\mathbf{x}_k-\mathbf{v}_{ref}\|_2^2 +C_3\|\mathbf{A}\mathbf{x}_{k}\|_2^2.  
+\end{equation}
+\end{assumption}
+
+The first term penalizes the robot's deviation from a reference line so that the robot output trajectory is not too irregular. The second term penalizes the speed profile of the planned trajectory with regard to a constant speed so that the robot will be time efficient. Here, the speed reference is set to be a constant speed going along the positive $x$-axis. The third term penalizes the acceleration of the output trajectory so that the motion will be smooth.
+
+\begin{assumption}[Constraint]
+The state constraint $\Gamma$ is non-convex and its complement is a collection of disjoint convex sets, i.e., each of the obstacle-region is itself convex.
+\end{assumption}
+
+Since the robot dynamics is not included in the MPC problem, a tracking controller is needed. The overall system is shown in Fig.~\ref{fig:MPCsystem}. Although the trajectory generated is feasible, tracking error will occur in real world experiment, causing the state ends up to be infeasible. This results in a violent motion because the control command according to the new planning result will immediately pull the robot out of the infeasible area. In order to avoid such problem, we introduce  $\mathbf{S}$, the slack variable vector. Introducing slack variables allows the states to violate the original constraint, which is the margin boundary of the obstacles (Fig.~\ref{fig:slack}). However these slack variables are also added to the cost function so that the violation is penalized \cite{chen2018foad}. The new problem is shown in the following:
+
+\begin{eqnarray}
+&\min_{\mathbf{x}_{k}} & J(\mathbf{x}_k) + \|\mathbf{S}\|_{2}^2 ,\\
+&s.t.& x_{k+i} \in\Gamma(s_{k+i}),\forall i=1,\ldots,H,\\
+&&         x_{k}=x_0(k).
+\end{eqnarray} 
+
+The final trajectory is $[x_k^k,x_{k+1}^{k+1},\ldots]$, which is equivalent to $[x_{k}^{k-1},x_{k+1}^{k},\ldots]$ (Fig.~\ref{fig: mpc}). As the problem is non-convex, it is possible that the planned trajectories calculated at different time steps enter into different local optima, hence the stability is hard to characterize. 
+
+\subsection{$M$-Analysis for analyzing stability properties}
+In this paper, we propose a new way, $M$-analysis, to analyzing stability properties.
+We say that an action location, $x_{k}$, is $M$-settling if for $k-M< t\leq k$, the last $M$ time steps at $x_{k}$ satisfy: $\|x_{k}^t-x_k^{t-1}\|\leq \|x_k^{t-1}-x_k^{t-2}\|$ or $\bigl|\|x_{k}^t-x_k^{t-1}\|-\|x_k^{t-1}-x_k^{t-2}\|\bigr|\leq \delta$, where $\delta$ is a small threshold. In Fig.~\ref{fig:m-stable}, the pink-orange-color circles are the action location $x_{k}$ planned at different time steps that are  tested for $M$-settling property of $x_{k}$. The notation implies that the planned state $x_k$ would have smaller and smaller change on each predicted action location between consecutive time steps after time step $k-M$. Under the condition that the environment in the future time step is not going to change much, we say that the non-convex MPC is $M$-settling if the above inequalities holds for all $k$. This result can also be expressed as saying the output solutions are all close to one local optimum after time step $k-M$. Note that the problem is always $1$-settling, since $\|x_{k}^t-x_k^{t-1}\|=0$.
+
+Having such property is good for the robot. $M$-analysis guarantees that the action location will not change much, and therefore, guarantees smoothness of the output trajectory. If M is sufficiently large, the robot system will not experience sudden change. Moreover, since the planned trajectory is usually tracked by a low-level tracking controller, the larger the $M$ is, the smoother the control commend would be.
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=9cm]{src/Mstable.png}
+\caption{Illustration of testing $M$-stable property.}
+\label{fig:m-stable}
+\end{center}
+\end{figure}
+
+
+\subsection{The Convex Feasible Set Algorithm}
+Because the problem we are solving has non-convex state constraints, the problem is a non-convex MPC problem. Here we solve the optimization problem at each MPC time step using the convex feasible set algorithm (CFS), which iteratively solve a sequence of sub-problems of the original non-convex problem using convex constraints, e.g., convex feasible set. The CFS algorithm in the MPC structure uses the previous solution, the planned action locations, as a reference. The convex feasible set for a reference point $x_r$ is computed as $\mathcal{F}(x_r) = \{x:A(x_r)x\leq b(x_r)\}$ where $A(x_r)$ is a matrix and $b(x_r)$ is a column vector. 
+At time step $k+1$, the reference is set as $\mathbf{x}_{k+1}^{r}=[x_{k+1}^{k},x_{k+2}^{k},\ldots,x_{k+H}^k, x_{k+H+1}^*]$ where
+\begin{equation}
+\begin{split}
+x_{k+H+1}^* & = \arg\min_{x_{k+H+1}} \|x_{k+H+1}\|_Q^2+\|x_{k+H}^k-x_{k+H+1}\|_R^2 \\
+ & +\|x_{k+H-1}^k -2x_{k+H}^k+x_{k+H+1}\|_P^2\text{.}
+\end{split}
+\end{equation}
+If $x_{k+H+1}^*\in\Gamma$, then the optimal solution is $\mathbf{x}_{k+1}^o = \mathbf{x}_{k+1}^r$.  If $x_{k+H+1}^*\notin\Gamma$, denote the feasible solution as 
+\begin{equation}
+\begin{split}
+\bar{x}_{k+H+1} & = \arg\min_{x_{k+H+1}\in\Gamma} \|x_{k+H+1}\|_Q^2+\|x_{k+H}^k-x_{k+H+1}\|_R^2 \\
+ & +\|x_{k+H-1}^k -2x_{k+H}^k+x_{k+H+1}\|_P^2 \text{.}
+\end{split}
+\end{equation}
+
+Moreover, denote \\$\mathbf{x}_{k+1}^{u}:=[x_{k+1}^{k},x_{k+2}^{k},\ldots,x_{k+H}^k, \bar x_{k+H+1}]$. 
+
+Because of the construction above, the optimal solution is $\mathbf{x}_{k+1}^{o}$ at step $k+1$ satisfies that
+\begin{eqnarray}
+\mathbf{x}_{k+1}^{o} = \arg\min_{x_{k+i}\in \mathcal{F}(x_{k+i}^o)}J(\mathbf{x}_{k+1}).
+\end{eqnarray}
+Note that $J(\mathbf{x}_{k+1}^{r})\leq J(\mathbf{x}_{k+1}^{o})\leq J(\mathbf{x}_{k+1}^{u})$, therefore, the cost of the trajectory is always bounded. 
+The executed trajectory is from those $\mathbf{x}_{k+1}^{o}$ for different $k$.
+
+
+\subsection{Stability with CFS}
+In this paper, we will show that the system is stable through simulation. Theoretical proof is left as future work. But here we sketch the procedures. First, we can show that at two consecutive time steps, the difference between the early state should be strictly smaller than the difference between any future state, i.e., $\|x_{k+i}^{k+1}-x_{k+i}^k\|<\lambda\|x_{k+i+1}^{k+1}-x_{k+i+1}^k\|$ for some $\lambda<1$ and for $i$ sufficiently small. Then we can show that the state is bounded and the difference between the same state at different time steps keeps decreasing.
+%the KKT condition is satisfied, i.e.,
+%\begin{eqnarray}
+%2Qx_{k+i}^k +2R(2x_{k+i}^k-x_{k+i-1}^k-x_{k+i+1}^k) + \eta_{k+i}^k A(x_{k+i}^k) \nonumber\\
+%= 0,\forall i=1,\ldots,H
+%\end{eqnarray}
+%where $\eta_{k+i}^k$ is the Lagrangian multiplier such that $\eta_{k+i}^k\geq 0$ and $\eta_{k+i}^k= 0$ if and only if $A(x_{k+i}^k)x_{k+i}^k= b(x_{k+i}^k)$.
+%
+%Hence
+%\begin{eqnarray}
+%(Q+2R)(x_{k+i}^{k+1}-x_{k+i}^k)=R(x_{k+i-1}^{k+1}-x_{k+i-1}^k)\\+R(x_{k+i+1}^{k+1}-x_{k+i+1}^k)-(\eta_{k+i}^{k+1} A(x_{k+i}^{k+1})-\eta_{k+i}^k A(x_{k+i}^k))
+%\end{eqnarray}
+%
+%Claim that $\|x_{k+i}^{k+1}-x_{k+i}^k\|<\lambda\|x_{k+i+1}^{k+1}-x_{k+i+1}^k\|$ for some $\lambda<1$.
+
+
+\section{SIMULATION RESULT AND DISCUSSION}
+The simulation scenario in this work is similar to that of mobile robots operating in factories. To test our algorithm, three kinds of scenarios will be considered. The first one is a static scenario where the environment  is completely known, while the other two are dynamic scenarios where the robot will observe changes in the environment.
+The goal for the robot is to move along a line, $y=0$, in the positive $x$-axis direction, while maintaining a constant speed which also points along the positive $x$-axis. 
+
+
+\subsection{Result of scenario with single static obstacle}
+In this scenario, there is only one static obstacle. This is the scenario as discussed in section 2, where the MPC problem is time invariant. 
+
+The simulation result is shown in Fig.~\ref{fig:1_1}. In the figure, the planned trajectory is marked by gray-star-line of which the gray-color gets darker as time step increases. We can see that the robot successfully track the line while avoiding collision. It is clear from the figure that the last several action locations planned at each time step are one on top of another. This can be taken as an indication of stability. 
+
+
+Figure~\ref{fig:single_m} shows the number $M$ for $M$-analysis at each action location. The result in Fig.~\ref{fig:single_m} shows that the system is 20-stable once it has run for a sufficient period of time. Note that 20-stable is the highest possible status that a system with prediction horizon of 20 can reach, which is the case in this simulation. If we decrease the sampling time to one fifth of the original, i.e, $\Delta t_{new}=0.2\Delta t_{original}$, it takes less time for the system to reach 20-settling (Fig.~\ref{fig:single_m}). In the figure, the system reaches 20-settling at the $49^{th}$ action location. The run-time at this point is almost equivalent to the run-time at the $10^{th}$ action location in Fig.~\ref{fig:single_m}. This result indicates that decreasing sampling time will increase $M$.
+
+Notice that there is a high peak in $M$ around the $35^{th}$ action location in Fig.~\ref{fig:single_m_0.1Hz} (and a jump at $6^{th}$ in Fig.~\ref{fig:single_m}). This is because these action locations around the peak are close to the obstacle and do not have much space to be adjust. Therefore, these action locations do not change much throughout time and the $M$-stable property is higher. We call these action locations which are fixed due to the existence of the obstacle critical cation locations. After passing the critical action locations, the robot again has freedom to adjust its planning to best fit the cost function. The adjustment causes $M$ to drop, but soon after, the system reaches to 20-stable and perfectly track the line with constant speed. 
+
+Another way to analyze stability is to look at the cost change. Define path$_k$ as $\mathbf{x}_{k}^{p} := [x_{k}^{k-1},x_{k+1}^{k},\ldots]$ (Fig.~\ref{fig:cost1}). Increase of the index $k$ means the path is starting further and further away from disturbance, i.e., the obstacle, which is located close to the robot's initial location. Therefore, it is expected that the cost will decrease as $k$ increases, which indicates that the robot is stably doing better and better according to what the cost function wants it to do. This expectation meets perfectly with Fig.~\ref{fig:costplot}. 
+
+\begin{figure}[t]
+\begin{center}
+\input{plot/single.tex}
+\caption{Simulation result for single static obstacle.  }
+\label{fig:1_1}
+\end{center}
+\end{figure}
+
+
+\begin{figure}[t]
+\begin{center}
+\input{plot/singleM.tex}
+\caption{ Number $M$ for $M$-analysis for each action location.}
+\label{fig:single_m}
+\end{center}
+\end{figure}
+
+
+
+\begin{figure}[t]
+\begin{center}
+\input{plot/simgleM_2.tex}
+\caption{Number $M$ for $M$-analysis for each action location with increased sampling rate.}
+\label{fig:single_m_0.1Hz}
+\end{center}
+\end{figure}
+
+
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[width=8cm]{src/1_3_path.png}
+\caption{Illustration of path$_k$ (the diagonal lines).}
+\label{fig:cost1}
+\end{center}
+\end{figure}
+
+\begin{figure}[t]
+\begin{center}
+\input{plot/cost_vs_path.tex}
+\caption{Cost VS path.}
+\label{fig:costplot}
+\end{center}
+\end{figure}
+
+\subsection{Result of scenario with initially unknown static obstacle}
+In this scenario, the robot does not know all the obstacle location at the beginning, and has only limited ``eye sight," i.e., only the information of the environment within the range starting from 20 meters ahead to its current position. The robot is expected to execute this MPC motion planning and adjust it's planned trajectory to avoid collision once it ``sees" the obstacle.
+
+The result of this scenario is shown in Fig.~\ref{fig:2_1}. At the beginning, the third obstacle on the right is unknown to the robot. After detecting the third obstacle, the robot corrects its planned trajectory to avoid the obstacle and completes its intention successfully.
+
+The $M$-analysis discussed previously can also be applied to this scenario even though the environment is changing. Since the analysis strategy of this work focus on local conversions at each action locations, i.e., every point in the trajectories, the analysis can still be done although the planned locations change a lot due to environment changes. This directly demonstrate the strength of the proposed $M$-analysis. The result for $M$-analysis is shown in Fig.~\ref{fig:2_2}. From the plot we can see that $M$ begins to increase slower after the $16^{th}$ action location, this is exactly where the robot detects the obstacle and plans the new trajectory to avoid collision. The $26^{th}$ to the $30^{th}$ are the critical action locations, therefore, have higher $M$-stable property. After passing by the obstacle, the robot adjusts its planning to best lower the cost and then track the line with constant speed steadily. Throughout the process from detection to reaching 20-stable, the system is at least 14-stable. Once the environment stops changing, the robot system reaches to 20-stable, which agrees with the result from the static-obstacle-scenario.     
+
+
+
+
+\begin{figure}[t]
+      \centering
+      \input{plot/multi.tex}
+      \caption{Simulation result for scenario that has initially unknown static obstacle.}
+      \label{fig:2_1}
+\end{figure}
+
+
+\begin{figure}[t]
+      \centering
+      \input{plot/multiM.tex}
+      \caption{$M$-stable analysis for scenario that has initially unknown static obstacle. }
+      \label{fig:2_2}
+\end{figure}
+
+
+
+
+
+\subsection{Result of scenario with initially unknown moving obstacle}
+In this scenario, there exists a moving obstacle, which is not observed by the robot at the beginning. Once the robot sees this obstacle, it also gets the information of the obstacle's dynamics, and therefore, is able to predict the future position of the obstacle and conduct planning accordingly. 
+
+
+In Fig.~\ref{fig:3_3}, the existence of the third obstacle on the right is unknown to the robot at the beginning. The obstacle is assumed to be moving in constant speed once detected. However, the obstacle will change its speed at some point after detection. In the simulation, after time step $t=20$, the obstacle changes its speed and from moving along negative $x$-axis to positive $y$-axis. From Fig.~\ref{fig:3_3} (b), we can see that the robot adjusts the planned trajectory to best utilize the space once it detects the speed change and avoids the obstacles successfully. From the $M$-analysis plot of this scenario (Fig.~\ref{fig:3_4}), we can also see that the system maintains $15$-settling even though the environment is changing though out time. The result indicates that as long as there is no sudden change accruing close before an action location is executed, the robot can best utilize the new information and successfully plan a smooth trajectory.
+
+
+
+
+
+
+\begin{figure}[t]
+      \centering
+      \input{plot/move.tex} 
+      \caption{Simulation result for scenario that has initially unknown moving obstacles (with speed change). }
+      \label{fig:3_3}
+\end{figure}
+
+
+\begin{figure}[t]
+      \centering
+      \input{plot/moveM.tex} 
+      \caption{M-stable analysis for scenario that has initially unknown moving obstacles (with speed change). }
+      \label{fig:3_4}
+\end{figure}
+
+\subsection{Relationship between $M$ and $H$}
+
+In industries, choosing a prediction horizon to be large enough is a common way to guarantee stability \cite{mayne2000constrained}. Therefore, we examined the relationship between the prediction horizon $H$ and the resulting $M$ for $M$-analysis. The scenario that has unknown moving obstacle is used here. Define the largest possible $M$ at each action location as $M_{max,k}$, where $M_{max,k} = k-1$ for $k\leq H+1$, and $M_{max,k} = H$ for $k>H+1$. In Fig.~\ref{fig:HM20}, systems with larger ($H>20$) prediction horizon reach $20$-settling (which is a guarantee that the location will not change much within 20 sampling steps before it is executed) faster than the system with $H=20$. Interestingly, all these systems reach $M=20$ in the range after $k=27$, which is the critical action location, but before $k=32$, whereas system with $H=20$ reaches $20$-stable not until after $k=45$. Figure~\ref{fig:HM} shows the smallest $M$ after $k$ reaches $H+1$ for each prediction horizon. It is clear that the smallest $M$ among all action location increase with $H$. Note that large $H$ makes the problem computationally heavy, which should be avoided if possible. We conclude that the horizon can be considered large enough if it can cover the last critical action location, in this case, when $H>27$.
+
+
+
+
+
+
+
+
+
+
+\begin{figure}[t]
+      \centering
+      \input{plot/M_max.tex} 
+      \caption{Difference between simulated $M$ and $M_{max,k}$ for $H=20$ (with speed change). }
+      \label{fig:HM20}
+\end{figure}
+
+\begin{figure}[t]
+      \centering
+      \input{plot/M_H.tex} 
+      \caption{Smallest $M$ for each prediction horizon. }
+      \label{fig:HM}
+\end{figure}
+
+\section{EXPERIMENT RESULT}
+
+\subsection{Experiment set up}
+To verify whether the planned trajectory is dynamically feasible for a mobile robot to execute, the MPC-CFS (with $H=20$) controller is tested on TurtleBot3, which is  developed by ROBOTIS. TurtleBot3 is a ROS standard platform robot. The MPC-CFS controller is running in MATLAB on a separate laptop with an 2.8GHz Intel Core i7-7700HQ.
+
+Since the dynamics is not included in the MPC problem, we need an additional tracking controller to calculate the suitable command for the robot to execute the planned trajectory. Here we used an iterative LQR (ILQR) controller \cite{tassa2012synthesis}. The cost function is designed to minimize the tracking error and also the robot's acceleration. The final control input at the first time step is chosen to be the the control command for the robot.
+
+\subsection{Experiment result}
+Similar to the simulation, the goal for the robot is to move along a line, $y=0$, in the positive $x$-axis direction, while avoiding obstacles and maintaining constant speed which also points along the positive $x$-axis.
+
+The experiment result is shown in Fig.~\ref{fig:trajectory} and Fig.~\ref{fig:ex}, where we can see that the robot can successfully avoid the obstacle and merge back to the original route. Control command is shown in Fig.~\ref{fig:command}.
+
+The proposed $M$-analysis can also be applied in this scenario. If we use the original planning problem ((1)$\sim$(3)), the infeasible starting state at each time step causes the robot to move in a violent manner. However, after introducing slack variables, the planning results in smoother trajectory. From Fig.~\ref{fig:trajectory} we can see that after the first several steps, the whole system maintains at least $13$-settling. After passing by the obstacle ($k>80$), $M$ goes to and maintains at $20$, which indicates that the robot has settled back to track $y=0$. 
+
+
+\begin{figure}[t]
+      \centering
+      \input{plot/video.tex} 
+      \caption{Difference between simulated $M$ and $M_{max,k}$ for $H=20$ (with speed change). }
+      \label{fig:trajectory}
+\end{figure}
+
+\begin{figure}[t]
+      \centering
+      \includegraphics[width=8cm]{plot/video_nice.eps}
+      
+      \caption{Smallest $M$ for each prediction horizon. }
+      \label{fig:command}
+\end{figure}
+
+\begin{figure}[t]
+      \centering
+      \input{plot/videoM.tex} 
+      \caption{Smallest $M$ for each prediction horizon. }
+      \label{fig:msettling}
+\end{figure}
+
+\begin{figure*}[b]
+ \centering
+  \begin{tabular}{@{}ccc@{}}
+  
+   \begin{minipage}{.3\textwidth}
+    \includegraphics[width=\textwidth]{plot/tu1.jpg}
+   \captionof*{figure}{At time step t=2}
+   \end{minipage} &
+    \begin{minipage}{.3\textwidth}
+    \includegraphics[width=\textwidth]{plot/tu2.jpg}
+   \captionof*{figure}{At time step t=32}
+   \end{minipage} &
+      \begin{minipage}{.3\textwidth}
+    \includegraphics[width=\textwidth]{plot/tu3.jpg}
+   \captionof*{figure}{At time step t=41}
+   \end{minipage}\\
+      \begin{minipage}{.3\textwidth}
+    \includegraphics[width=\textwidth]{plot/tu4.jpg}
+   \captionof*{figure}{At time step t=57}
+   \end{minipage} &
+    \begin{minipage}{.3\textwidth}
+    \includegraphics[width=\textwidth]{plot/tu5.jpg}
+    \captionof*{figure}{At time step t=80}
+   \end{minipage} &
+      \begin{minipage}{.3\textwidth}
+    \includegraphics[width=\textwidth]{plot/tu6.jpg}
+    \captionof*{figure}{At time step t=91}
+   \end{minipage}\\
+  \end{tabular}
+  \caption{Experiment result of robot avoiding obstacle.}
+  \label{fig:ex}
+\end{figure*} 
+
+
+\section{Conclusion}
+
+This paper proposed a new method of analyzing stability properties for non-convex MPC. The proposed method, $M$-analysis, considered the difference of each action location planned at consecutive time steps. We said the action location $k$ is $M$-settling if there is smaller and smaller change between consecutive time steps after time step $k-m$ which indicates local conversions of the planned trajectory. Simulation results showed that a robot that implemented the MPC-CFS algorithm was capable of dealing with dynamic environment as long as the changes in the environment was predictable. The stability analysis using $M$-analysis was performed to show that MPC-CFS had decent stability properties. Finally, experiment on Turtlebot3 showed that the proposed MCP-CFS controller performed well.In the future, we will include the robot dynamics in to the problem formulation and complete the theoretical proof for $M$-analysis. 
+
+
+
+\bibliography{root(ACC)}
+\bibliographystyle{IEEEtran}
+
+
+\end{document}
+
+
+
+
+
+
+
