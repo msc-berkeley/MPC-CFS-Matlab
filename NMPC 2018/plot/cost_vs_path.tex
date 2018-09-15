@@ -1,0 +1,53 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=2.4in,
+height=0.8in,
+at={(0.70in,0.511in)},
+scale only axis,
+xmin=0,
+xmax=25,
+xlabel style={font=\color{white!15!black}},
+xlabel={$\text{path}_{\text{k}}$},
+ymin=0,
+ymax=5,
+ylabel style={font=\color{white!15!black}},
+ylabel={Cost},
+axis background/.style={fill=white},
+title style={font=\bfseries},
+title={ Cost VS path},
+legend style={legend cell align=left, align=left, draw=white!15!black}
+]
+\addplot [color=blue, line width=1.0pt, mark=asterisk, mark options={solid, blue}]
+  table[row sep=crcr]{%
+1	4.84917247889474\\
+2	4.84343771053768\\
+3	4.64946162290941\\
+4	4.47786350417973\\
+5	4.25233666257807\\
+6	3.51552858332419\\
+7	2.94772427932477\\
+8	2.25536175168171\\
+9	1.65849329360355\\
+10	1.20972302106523\\
+11	0.88127459336379\\
+12	0.642317915568134\\
+13	0.468856926679307\\
+14	0.343235597286815\\
+15	0.252620315948625\\
+16	0.187720941226537\\
+17	0.141829575315641\\
+18	0.110113996754636\\
+19	0.0891045069748996\\
+20	0.0762837944662031\\
+21	0.0693584272039611\\
+};
+
+\end{axis}
+\end{tikzpicture}%

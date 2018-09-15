@@ -1,0 +1,38 @@
+% This file was created by matlab2tikz.
+%
+%The latest updates can be retrieved from
+%  http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz-matlab2tikz
+%where you can also make suggestions and rate matlab2tikz.
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=2.4in,
+height=0.8in,
+at={(0.758in,0.445in)},
+scale only axis,
+xmin=20,
+xmax=60,
+xlabel style={font=\color{white!15!black}},
+xlabel={H},
+ymin=10,
+ymax=60,
+ylabel style={font=\color{white!15!black}},
+ylabel={Smallest M},
+axis background/.style={fill=white},
+title style={font=\bfseries},
+title={Smallest M for each prediction horizon},
+legend style={legend cell align=left, align=left, draw=white!15!black}
+]
+\addplot [color=blue, line width=1.0pt, mark=asterisk, mark options={solid, blue}]
+  table[row sep=crcr]{%
+20	12\\
+30	22\\
+40	37\\
+50	46\\
+60	54\\
+};
+
+
+\end{axis}
+\end{tikzpicture}%
